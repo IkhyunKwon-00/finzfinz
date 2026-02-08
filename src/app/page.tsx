@@ -37,30 +37,7 @@ const DEFAULT_WATCHLIST = [
   'NBIS',
 ];
 
-const KOREAN_COMPANIES: Record<string, string> = {
-  '삼성전자': '005930.KS',
-  삼성: '005930.KS',
-  lg전자: '066570.KS',
-  lg: '066570.KS',
-  현대차: '005380.KS',
-  현대: '005380.KS',
-  기아: '000270.KS',
-  sk하이닉스: '000660.KS',
-  인텔: 'INTC',
-  intel: 'INTC',
-  nvidia: 'NVDA',
-  엔비디아: 'NVDA',
-  테슬라: 'TSLA',
-  tesla: 'TSLA',
-  아마존: 'AMZN',
-  amazon: 'AMZN',
-  애플: 'AAPL',
-  apple: 'AAPL',
-  구글: 'GOOGL',
-  google: 'GOOGL',
-  마이크로소프트: 'MSFT',
-  microsoft: 'MSFT',
-};
+const REQUIRED_KOREAN_TICKERS = ['035420.KS', '000660.KS', '005930.KS', '005380.KS'];
 
 const STORAGE_KEYS = {
   watchlist: 'finz_watchlist',
@@ -160,7 +137,15 @@ async function setStateValue(key: string, value: number) {
   }
 }
 
-function Sparkline({ points, color }: { points: ChartPoint[]; color: string }) {
+function Sparkline({
+  points,
+  color,
+  gradientId,
+}: {
+  points: ChartPoint[];
+  color: string;
+  gradientId: string;
+}) {
   const width = 320;
   const height = 120;
   if (!points.length) {
@@ -183,7 +168,7 @@ function Sparkline({ points, color }: { points: ChartPoint[]; color: string }) {
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-28">
       <defs>
-        <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.35" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
@@ -196,7 +181,7 @@ function Sparkline({ points, color }: { points: ChartPoint[]; color: string }) {
       />
       <polygon
         points={`0,${height} ${polyline} ${width},${height}`}
-        fill="url(#spark-fill)"
+        fill={`url(#${gradientId})`}
       />
     </svg>
   );
@@ -326,6 +311,7 @@ function WatchlistCard({
   const delta = formatDelta(change);
   const market = getMarketLabel(ticker, quote || undefined);
   const priceColor = change < 0 ? '#ff5c6f' : '#00e58f';
+  const gradientId = `spark-${ticker.replace(/[^a-zA-Z0-9]/g, '')}`;
 
   return (
     <div className="finz-card p-6 flex flex-col gap-4 finz-fade-in">
@@ -376,7 +362,7 @@ function WatchlistCard({
         </div>
         {delta ? <span className={delta.className}>{delta.text}</span> : null}
       </div>
-      <Sparkline points={chart} color={priceColor} />
+      <Sparkline points={chart} color={priceColor} gradientId={gradientId} />
     </div>
   );
 }
@@ -390,6 +376,14 @@ function HomeContent() {
     STORAGE_KEYS.watchlist,
     DEFAULT_WATCHLIST,
   );
+  useEffect(() => {
+    const missing = REQUIRED_KOREAN_TICKERS.filter(
+      (ticker) => !watchlist.includes(ticker)
+    );
+    if (missing.length > 0) {
+      setWatchlist([...missing, ...watchlist]);
+    }
+  }, [watchlist, setWatchlist]);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<QuoteData[]>([]);
   const [krwRate, setKrwRate] = useLocalStorageState<number | null>(
@@ -492,18 +486,7 @@ function HomeContent() {
     }
     const timer = window.setTimeout(async () => {
       const query = searchQuery.trim();
-      const localMatch = KOREAN_COMPANIES[query] || KOREAN_COMPANIES[query.toLowerCase()];
       const items: QuoteData[] = [];
-      if (localMatch) {
-        try {
-          const res = await fetch(`/api/quote?symbol=${encodeURIComponent(localMatch)}`);
-          if (res.ok) {
-            items.push(await res.json());
-          }
-        } catch {
-          // ignore
-        }
-      }
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=6`);
         if (res.ok) {
