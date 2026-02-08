@@ -79,12 +79,19 @@ function getMarketLabel(ticker: string, info?: QuoteData) {
   return 'USA';
 }
 
+function formatNumber(value: number, digits = 0) {
+  return value.toLocaleString('en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
 function formatUsdKrw(priceUsd: number, krwRate?: number) {
   if (!priceUsd || !krwRate) {
-    return `USD ${priceUsd.toFixed(2)}`;
+    return `$${formatNumber(priceUsd, 2)}`;
   }
   const krw = priceUsd * krwRate;
-  return `KRW ${krw.toFixed(0)} (USD ${priceUsd.toFixed(2)})`;
+  return `₩${formatNumber(krw, 0)} ($${formatNumber(priceUsd, 2)})`;
 }
 
 function formatDelta(delta?: number) {
@@ -342,14 +349,14 @@ function WatchlistCard({
             className="finz-button"
             onClick={() => onDelete(ticker)}
           >
-            제거
+            X
           </button>
         </div>
       </div>
       <div>
         <div className="text-3xl font-semibold" style={{ color: priceColor }}>
           {market === 'Korea'
-            ? `KRW ${currentPrice.toFixed(0)}`
+            ? `₩${formatNumber(currentPrice, 0)}`
             : formatUsdKrw(currentPrice, krwRate)}
         </div>
         {delta ? <span className={delta.className}>{delta.text}</span> : null}
@@ -599,7 +606,7 @@ function HomeContent() {
                     className="finz-button"
                     onClick={() => handleAddTicker(item.symbol)}
                   >
-                    추가
+                    +
                   </button>
                 </div>
               ))}
@@ -617,7 +624,7 @@ function HomeContent() {
               USD / KRW
             </div>
             <div className="text-3xl font-semibold text-white mt-4">
-              {krwRate ? `KRW ${krwRate.toFixed(0)}` : '데이터 불러오는 중'}
+              {krwRate ? `₩${formatNumber(krwRate, 0)}` : '데이터 불러오는 중'}
             </div>
             {krwDeltaText ? (
               <div className="mt-3">
@@ -631,7 +638,7 @@ function HomeContent() {
               Bitcoin
             </div>
             <div className="text-3xl font-semibold text-white mt-4">
-              {btc ? `USD ${btc.price.toFixed(0)}` : '데이터 불러오는 중'}
+              {btc ? `$${formatNumber(btc.price, 0)}` : '데이터 불러오는 중'}
             </div>
             {btcDeltaText ? (
               <div className="mt-3">
@@ -766,7 +773,7 @@ function DetailSection({ ticker, krwRate }: { ticker: string; krwRate?: number }
         <div className="text-right">
           <div className="text-4xl font-semibold text-white">
             {market === 'Korea'
-              ? `KRW ${currentPrice.toFixed(0)}`
+              ? `₩${formatNumber(currentPrice, 0)}`
               : formatUsdKrw(currentPrice, krwRate)}
           </div>
           {delta ? <span className={delta.className}>{delta.text}</span> : null}
