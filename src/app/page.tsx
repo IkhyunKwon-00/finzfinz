@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 type QuoteData = {
@@ -359,7 +359,7 @@ function WatchlistCard({
   );
 }
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTicker = searchParams.get('ticker');
@@ -674,6 +674,24 @@ export default function Home() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <main className="finz-shell">
+          <div className="finz-container mx-auto max-w-6xl px-6 py-16">
+            <div className="finz-card p-8 text-center text-slate-400">
+              로딩 중...
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
 
