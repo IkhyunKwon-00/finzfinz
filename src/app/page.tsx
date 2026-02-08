@@ -23,6 +23,10 @@ type ChartPoint = {
 };
 
 const DEFAULT_WATCHLIST = [
+  '035420.KS',
+  '000660.KS',
+  '005930.KS',
+  '005380.KS',
   'PLTR',
   'TSLA',
   'NVDA',
@@ -31,8 +35,6 @@ const DEFAULT_WATCHLIST = [
   'IREN',
   'CRWV',
   'NBIS',
-  '000660.KS',
-  '005930.KS',
 ];
 
 const KOREAN_COMPANIES: Record<string, string> = {
@@ -664,9 +666,9 @@ function HomeContent() {
 
         <section className="space-y-10">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">관심 종목 - 미국주식</h2>
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">관심 종목 - 한국주식</h2>
             <div className="grid md:grid-cols-2 gap-6">
-              {usaTickers.map((ticker) => (
+              {koreaTickers.map((ticker) => (
                 <WatchlistCard
                   key={ticker}
                   ticker={ticker}
@@ -678,9 +680,9 @@ function HomeContent() {
             </div>
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">관심 종목 - 한국주식</h2>
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">관심 종목 - 미국주식</h2>
             <div className="grid md:grid-cols-2 gap-6">
-              {koreaTickers.map((ticker) => (
+              {usaTickers.map((ticker) => (
                 <WatchlistCard
                   key={ticker}
                   ticker={ticker}
