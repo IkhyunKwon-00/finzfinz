@@ -1,15 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0b0f1a;
+  --foreground: #eef1f6;
+  --finz-accent: #00e58f;
+  --finz-accent-2: #34b8ff;
+  --finz-surface: rgba(10, 12, 20, 0.78);
+  --finz-border: rgba(255, 255, 255, 0.08);
+  --finz-muted: rgba(255, 255, 255, 0.6);
+  --finz-shadow: 0 30px 80px rgba(3, 8, 22, 0.65);
+  --finz-radius: 22px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-finz-body);
+  --font-mono: var(--font-finz-display);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +29,126 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-finz-body), sans-serif;
+}
+
+.finz-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 800px at 15% 10%, rgba(52, 184, 255, 0.18), transparent 55%),
+    radial-gradient(900px 700px at 85% 0%, rgba(0, 229, 143, 0.16), transparent 50%),
+    radial-gradient(900px 900px at 50% 100%, rgba(119, 78, 255, 0.1), transparent 55%),
+    linear-gradient(160deg, #0b0f1a 0%, #090b13 40%, #0b1222 100%);
+}
+
+.finz-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 36px 36px;
+  opacity: 0.25;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.finz-container {
+  position: relative;
+  z-index: 1;
+}
+
+.finz-title {
+  font-family: var(--font-finz-display), sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #dfe8ff;
+  text-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.finz-card {
+  background: var(--finz-surface);
+  border: 1px solid var(--finz-border);
+  border-radius: var(--finz-radius);
+  box-shadow: var(--finz-shadow);
+  backdrop-filter: blur(14px);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.finz-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0, 229, 143, 0.35);
+  box-shadow: 0 36px 90px rgba(0, 0, 0, 0.5);
+}
+
+.finz-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.finz-pill.up {
+  color: #00e58f;
+  background: rgba(0, 229, 143, 0.12);
+}
+
+.finz-pill.down {
+  color: #ff5c6f;
+  background: rgba(255, 92, 111, 0.12);
+}
+
+.finz-input {
+  background: rgba(12, 16, 26, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  color: var(--foreground);
+  padding: 0.85rem 1.5rem;
+  width: 100%;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.finz-input:focus {
+  outline: none;
+  border-color: rgba(0, 229, 143, 0.6);
+  box-shadow: 0 0 0 3px rgba(0, 229, 143, 0.2);
+}
+
+.finz-button {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(120deg, rgba(0, 229, 143, 0.2), rgba(52, 184, 255, 0.2));
+  color: #f4f7ff;
+  padding: 0.55rem 1.1rem;
+  font-weight: 600;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.finz-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 229, 143, 0.45);
+}
+
+.finz-fade-in {
+  animation: finzFade 0.5s ease forwards;
+}
+
+@keyframes finzFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
