@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b0f1a;
-  --foreground: #eef1f6;
-  --finz-accent: #00e58f;
-  --finz-accent-2: #34b8ff;
-  --finz-surface: rgba(10, 12, 20, 0.78);
-  --finz-border: rgba(255, 255, 255, 0.08);
-  --finz-muted: rgba(255, 255, 255, 0.6);
-  --finz-shadow: 0 30px 80px rgba(3, 8, 22, 0.65);
+  --background: #f6f7fb;
+  --foreground: #0f172a;
+  --finz-accent: #0ea5e9;
+  --finz-accent-2: #22c55e;
+  --finz-surface: rgba(255, 255, 255, 0.92);
+  --finz-border: rgba(15, 23, 42, 0.08);
+  --finz-muted: rgba(15, 23, 42, 0.6);
+  --finz-shadow: 0 30px 80px rgba(15, 23, 42, 0.12);
   --finz-radius: 22px;
 }
 
@@ -35,10 +35,9 @@ body {
 .finz-shell {
   min-height: 100vh;
   background:
-    radial-gradient(1200px 800px at 15% 10%, rgba(52, 184, 255, 0.18), transparent 55%),
-    radial-gradient(900px 700px at 85% 0%, rgba(0, 229, 143, 0.16), transparent 50%),
-    radial-gradient(900px 900px at 50% 100%, rgba(119, 78, 255, 0.1), transparent 55%),
-    linear-gradient(160deg, #0b0f1a 0%, #090b13 40%, #0b1222 100%);
+    radial-gradient(1000px 700px at 10% 0%, rgba(14, 165, 233, 0.12), transparent 55%),
+    radial-gradient(900px 600px at 90% 0%, rgba(34, 197, 94, 0.12), transparent 55%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%);
 }
 
 .finz-shell::before {
@@ -46,10 +45,10 @@ body {
   position: fixed;
   inset: 0;
   background-image: linear-gradient(
-      rgba(255, 255, 255, 0.04) 1px,
+      rgba(15, 23, 42, 0.04) 1px,
       transparent 1px
     ),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
   background-size: 36px 36px;
   opacity: 0.25;
   pointer-events: none;
@@ -66,8 +65,8 @@ body {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #dfe8ff;
-  text-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  color: #0f172a;
+  text-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
 }
 
 .finz-card {
@@ -81,8 +80,8 @@ body {
 
 .finz-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(0, 229, 143, 0.35);
-  box-shadow: 0 36px 90px rgba(0, 0, 0, 0.5);
+  border-color: rgba(14, 165, 233, 0.35);
+  box-shadow: 0 36px 90px rgba(15, 23, 42, 0.16);
 }
 
 .finz-pill {
@@ -98,17 +97,17 @@ body {
 
 .finz-pill.up {
   color: #00e58f;
-  background: rgba(0, 229, 143, 0.12);
+  background: rgba(34, 197, 94, 0.12);
 }
 
 .finz-pill.down {
   color: #ff5c6f;
-  background: rgba(255, 92, 111, 0.12);
+  background: rgba(239, 68, 68, 0.12);
 }
 
 .finz-input {
-  background: rgba(12, 16, 26, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 999px;
   color: var(--foreground);
   padding: 0.85rem 1.5rem;
@@ -119,15 +118,15 @@ body {
 
 .finz-input:focus {
   outline: none;
-  border-color: rgba(0, 229, 143, 0.6);
-  box-shadow: 0 0 0 3px rgba(0, 229, 143, 0.2);
+  border-color: rgba(14, 165, 233, 0.6);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
 }
 
 .finz-button {
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(120deg, rgba(0, 229, 143, 0.2), rgba(52, 184, 255, 0.2));
-  color: #f4f7ff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: linear-gradient(120deg, rgba(14, 165, 233, 0.18), rgba(34, 197, 94, 0.18));
+  color: #0f172a;
   padding: 0.55rem 1.1rem;
   font-weight: 600;
   transition: transform 0.2s ease, border-color 0.2s ease;
@@ -135,7 +134,7 @@ body {
 
 .finz-button:hover {
   transform: translateY(-2px);
-  border-color: rgba(0, 229, 143, 0.45);
+  border-color: rgba(14, 165, 233, 0.45);
 }
 
 .finz-fade-in {

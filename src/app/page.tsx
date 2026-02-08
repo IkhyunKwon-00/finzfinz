@@ -329,10 +329,10 @@ function WatchlistCard({
     <div className="finz-card p-6 flex flex-col gap-4 finz-fade-in">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-lg font-semibold text-white">
+          <div className="text-lg font-semibold text-slate-900">
             {quote?.shortName || quote?.longName || '기업명 없음'}
           </div>
-          <div className="text-sm text-slate-400">
+          <div className="text-sm text-slate-500">
             {ticker} - {market}
           </div>
         </div>
@@ -341,8 +341,21 @@ function WatchlistCard({
             type="button"
             className="finz-button"
             onClick={() => onDetail(ticker)}
+            aria-label="상세 보기"
           >
-            상세
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <line x1="20" y1="20" x2="16.6" y2="16.6" />
+            </svg>
           </button>
           <button
             type="button"
@@ -569,13 +582,13 @@ function HomeContent() {
       <div className="finz-container mx-auto max-w-6xl px-6 py-16">
         <div className="text-center mb-12 finz-fade-in">
           <h1 className="finz-title text-6xl">Finz</h1>
-          <p className="text-slate-300 mt-3">
+          <p className="text-slate-600 mt-3">
             개인 주식 대시보드: 관심 종목과 시장 흐름을 한 화면에서 확인하세요.
           </p>
         </div>
 
         <section className="finz-card p-6 mb-10 finz-fade-in">
-          <div className="text-sm uppercase tracking-[0.2em] text-slate-400">
+          <div className="text-sm uppercase tracking-[0.2em] text-slate-500">
             Search
           </div>
           <div className="mt-4">
@@ -594,10 +607,10 @@ function HomeContent() {
                   className="finz-card p-4 flex items-center justify-between"
                 >
                   <div>
-                    <div className="text-base font-semibold text-white">
+                    <div className="text-base font-semibold text-slate-900">
                       {item.symbol}
                     </div>
-                    <div className="text-sm text-slate-400">
+                    <div className="text-sm text-slate-500">
                       {item.shortName || item.longName || '이름 없음'}
                     </div>
                   </div>
@@ -620,10 +633,10 @@ function HomeContent() {
 
         <section className="grid md:grid-cols-2 gap-6 mb-12">
           <div className="finz-card p-6">
-            <div className="text-sm uppercase tracking-[0.2em] text-slate-400">
+            <div className="text-sm uppercase tracking-[0.2em] text-slate-500">
               USD / KRW
             </div>
-            <div className="text-3xl font-semibold text-white mt-4">
+            <div className="text-3xl font-semibold text-slate-900 mt-4">
               {krwRate ? `₩${formatNumber(krwRate, 0)}` : '데이터 불러오는 중'}
             </div>
             {krwDeltaText ? (
@@ -634,10 +647,10 @@ function HomeContent() {
             <div className="text-xs text-slate-500 mt-3">Frankfurter API</div>
           </div>
           <div className="finz-card p-6">
-            <div className="text-sm uppercase tracking-[0.2em] text-slate-400">
+            <div className="text-sm uppercase tracking-[0.2em] text-slate-500">
               Bitcoin
             </div>
-            <div className="text-3xl font-semibold text-white mt-4">
+            <div className="text-3xl font-semibold text-slate-900 mt-4">
               {btc ? `$${formatNumber(btc.price, 0)}` : '데이터 불러오는 중'}
             </div>
             {btcDeltaText ? (
@@ -651,7 +664,7 @@ function HomeContent() {
 
         <section className="space-y-10">
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">관심 종목 - 미국주식</h2>
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">관심 종목 - 미국주식</h2>
             <div className="grid md:grid-cols-2 gap-6">
               {usaTickers.map((ticker) => (
                 <WatchlistCard
@@ -665,7 +678,7 @@ function HomeContent() {
             </div>
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">관심 종목 - 한국주식</h2>
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">관심 종목 - 한국주식</h2>
             <div className="grid md:grid-cols-2 gap-6">
               {koreaTickers.map((ticker) => (
                 <WatchlistCard
@@ -690,7 +703,7 @@ export default function Home() {
       fallback={
         <main className="finz-shell">
           <div className="finz-container mx-auto max-w-6xl px-6 py-16">
-            <div className="finz-card p-8 text-center text-slate-400">
+            <div className="finz-card p-8 text-center text-slate-500">
               로딩 중...
             </div>
           </div>
@@ -763,15 +776,15 @@ function DetailSection({ ticker, krwRate }: { ticker: string; krwRate?: number }
     <div className="finz-card p-8">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
         <div>
-          <div className="text-3xl font-semibold text-white">
+          <div className="text-3xl font-semibold text-slate-900">
             {quote?.longName || quote?.shortName || ticker}
           </div>
-          <div className="text-sm text-slate-400 mt-1">
+          <div className="text-sm text-slate-500 mt-1">
             {ticker} - {market} - {quote?.industry || '산업 정보 없음'}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-4xl font-semibold text-white">
+          <div className="text-4xl font-semibold text-slate-900">
             {market === 'Korea'
               ? `₩${formatNumber(currentPrice, 0)}`
               : formatUsdKrw(currentPrice, krwRate)}
@@ -781,7 +794,7 @@ function DetailSection({ ticker, krwRate }: { ticker: string; krwRate?: number }
       </div>
 
       <div>
-        <div className="text-sm uppercase tracking-[0.2em] text-slate-400 mb-4">
+        <div className="text-sm uppercase tracking-[0.2em] text-slate-500 mb-4">
           1Y Candlestick
         </div>
         <CandlestickChart points={chart} />
