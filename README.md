@@ -1,0 +1,2 @@
+# finzfinz
+finz.ai.kr
