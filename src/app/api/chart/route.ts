@@ -1,3 +1,5 @@
+import { fetchYahooChart } from "@/lib/yahoo";
+
 export const runtime = "nodejs";
 export const revalidate = 300;
 
@@ -17,22 +19,10 @@ type ChartPoint = {
   low?: number | null;
 };
 
-const RANGE_DAYS: Record<string, number> = {
-  "30d": 30,
-  "3mo": 90,
-  "1y": 365,
-};
-
 const RANGE_QUERY: Record<string, string> = {
   "30d": "1mo",
   "3mo": "3mo",
   "1y": "1y",
-};
-
-const YAHOO_HEADERS = {
-  "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
-  accept: "application/json,text/plain,*/*",
-  "accept-language": "en-US,en;q=0.9",
 };
 
 export async function GET(request: Request) {
@@ -45,15 +35,7 @@ export async function GET(request: Request) {
 
   try {
     const rangeQuery = RANGE_QUERY[range] ?? RANGE_QUERY["30d"];
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
-      symbol
-    )}?interval=1d&range=${rangeQuery}`;
-    const res = await fetch(url, { cache: "no-store", headers: YAHOO_HEADERS });
-    if (!res.ok) {
-      throw new Error("chart fetch failed");
-    }
-    const data = await res.json();
-    const result = data?.chart?.result?.[0];
+    const result = await fetchYahooChart(symbol, rangeQuery, "1d");
     const timestamps = (result?.timestamp ?? []) as number[];
     const quote = result?.indicators?.quote?.[0];
     const closes = quote?.close ?? [];

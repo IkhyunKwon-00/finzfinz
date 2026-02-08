@@ -323,7 +323,7 @@ function WatchlistCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="text-lg font-semibold text-white">
-            {quote?.shortName || quote?.longName || ticker}
+            {quote?.shortName || quote?.longName || '기업명 없음'}
           </div>
           <div className="text-sm text-slate-400">
             {ticker} - {market}
