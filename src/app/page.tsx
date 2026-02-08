@@ -514,11 +514,11 @@ function HomeContent() {
   };
 
   const handleDetail = (ticker: string) => {
-    router.replace(`/?ticker=${encodeURIComponent(ticker)}`);
+    router.push(`/?ticker=${encodeURIComponent(ticker)}`);
   };
 
   const handleBack = () => {
-    router.replace('/');
+    router.push('/');
   };
 
   const { usaTickers, koreaTickers } = useMemo(() => {

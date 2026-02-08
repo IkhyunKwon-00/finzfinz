@@ -29,6 +29,12 @@ const RANGE_QUERY: Record<string, string> = {
   "1y": "1y",
 };
 
+const YAHOO_HEADERS = {
+  "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+  accept: "application/json,text/plain,*/*",
+  "accept-language": "en-US,en;q=0.9",
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get("symbol");
@@ -42,7 +48,7 @@ export async function GET(request: Request) {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
       symbol
     )}?interval=1d&range=${rangeQuery}`;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, { cache: "no-store", headers: YAHOO_HEADERS });
     if (!res.ok) {
       throw new Error("chart fetch failed");
     }

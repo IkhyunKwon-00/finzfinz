@@ -8,16 +8,23 @@ type QuoteResult = {
   regularMarketPrice?: number | null;
   postMarketPrice?: number | null;
   preMarketPrice?: number | null;
+  regularMarketPreviousClose?: number | null;
   regularMarketChangePercent?: number | null;
   currency?: string | null;
   exchange?: string | null;
+};
+
+const YAHOO_HEADERS = {
+  "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+  accept: "application/json,text/plain,*/*",
+  "accept-language": "en-US,en;q=0.9",
 };
 
 async function fetchQuote(symbol: string) {
   const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(
     symbol
   )}`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store", headers: YAHOO_HEADERS });
   if (!res.ok) {
     throw new Error("quote fetch failed");
   }
@@ -31,7 +38,7 @@ async function fetchIndustry(symbol: string) {
     const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(
       symbol
     )}?modules=assetProfile`;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, { cache: "no-store", headers: YAHOO_HEADERS });
     if (!res.ok) {
       return null;
     }
@@ -59,15 +66,18 @@ export async function GET(request: Request) {
     if (!quote) {
       return Response.json({ error: "symbol not found" }, { status: 404 });
     }
+    const currentPrice =
+      quote.regularMarketPrice ??
+      quote.postMarketPrice ??
+      quote.preMarketPrice ??
+      quote.regularMarketPreviousClose ??
+      null;
+
     return Response.json({
       symbol: quote.symbol ?? symbol,
       shortName: quote.shortName ?? quote.longName,
       longName: quote.longName,
-      currentPrice:
-        quote.regularMarketPrice ??
-        quote.postMarketPrice ??
-        quote.preMarketPrice ??
-        null,
+      currentPrice,
       regularMarketChangePercent: quote.regularMarketChangePercent ?? null,
       currency: quote.currency ?? null,
       exchange: quote.exchange ?? null,
