@@ -22,6 +22,11 @@ type ChartPoint = {
   low?: number;
 };
 
+type ProfileSummary = {
+  bullets: string[];
+  source: 'claude' | 'fallback';
+};
+
 type DisplayCurrency = 'KRW' | 'USD';
 
 const DEFAULT_WATCHLIST = [
@@ -915,6 +920,7 @@ function DetailSection({
 }) {
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [chart, setChart] = useState<ChartPoint[]>([]);
+  const [profile, setProfile] = useState<ProfileSummary | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -964,12 +970,38 @@ function DetailSection({
     };
   }, [ticker]);
 
+  useEffect(() => {
+    let isActive = true;
+    const loadProfile = async () => {
+      try {
+        const res = await fetch(`/api/profile?symbol=${encodeURIComponent(ticker)}`);
+        if (!res.ok) {
+          throw new Error('profile fetch failed');
+        }
+        const data = (await res.json()) as ProfileSummary;
+        if (isActive) {
+          setProfile({
+            bullets: (data.bullets || []).slice(0, 3),
+            source: data.source || 'fallback',
+          });
+        }
+      } catch {
+        if (isActive) {
+          setProfile(null);
+        }
+      }
+    };
+    loadProfile();
+    return () => {
+      isActive = false;
+    };
+  }, [ticker]);
+
   const change = quote?.regularMarketChangePercent ?? 0;
   const delta = formatDelta(change);
   const market = getMarketLabel(ticker, quote || undefined);
   const currentPrice = quote?.currentPrice ?? 0;
   const companyName = quote?.longName || quote?.shortName || ticker;
-  const summaryText = `${companyName}의 기업 프로필 정보를 준비 중입니다.`;
   const detailPriceColor = change < 0 ? '#3b82f6' : '#ff5c6f';
 
   const changeAmount =
@@ -994,7 +1026,7 @@ function DetailSection({
 
     const sign = converted >= 0 ? '+' : '-';
     const absValue = Math.abs(converted);
-    const unit = displayCurrency === 'KRW' ? `₩${formatNumber(absValue, 0)}` : `$${formatNumber(absValue, 2)}`;
+    const unit = displayCurrency === 'KRW' ? formatNumber(absValue, 0) : formatNumber(absValue, 2);
     return `${sign}${unit}`;
   })();
 
@@ -1032,9 +1064,15 @@ function DetailSection({
       <div>
         <div className="text-lg font-semibold text-slate-900 mb-3">기업 프로필</div>
         <section className="finz-card p-8">
-          <div className="text-slate-700 leading-relaxed">
-            {summaryText}
-          </div>
+          {profile?.bullets?.length ? (
+            <ul className="text-slate-700 leading-relaxed space-y-2">
+              {profile.bullets.map((line, index) => (
+                <li key={`${ticker}-profile-${index}`}>{line}</li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-slate-500 text-sm">기업 프로필을 생성 중입니다.</div>
+          )}
         </section>
       </div>
 
