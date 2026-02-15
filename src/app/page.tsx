@@ -22,6 +22,8 @@ type ChartPoint = {
   low?: number;
 };
 
+type DisplayCurrency = 'KRW' | 'USD';
+
 const DEFAULT_WATCHLIST = [
   '035420.KS',
   '000660.KS',
@@ -43,6 +45,7 @@ const STORAGE_KEYS = {
   watchlist: 'finz_watchlist',
   krwRate: 'finz_krw_rate',
   krwPrev: 'finz_krw_prev',
+  displayCurrency: 'finz_display_currency',
 };
 
 function getMarketLabel(ticker: string, info?: QuoteData) {
@@ -65,12 +68,65 @@ function formatNumber(value: number, digits = 0) {
   });
 }
 
-function formatUsdKrw(priceUsd: number, krwRate?: number) {
-  if (!priceUsd || !krwRate) {
-    return `$${formatNumber(priceUsd, 2)}`;
+function formatPriceByCurrency({
+  price,
+  sourceCurrency,
+  displayCurrency,
+  krwRate,
+}: {
+  price: number;
+  sourceCurrency: DisplayCurrency;
+  displayCurrency: DisplayCurrency;
+  krwRate?: number;
+}) {
+  if (!Number.isFinite(price)) {
+    return '-';
   }
-  const krw = priceUsd * krwRate;
-  return `₩${formatNumber(krw, 0)} ($${formatNumber(priceUsd, 2)})`;
+
+  if (sourceCurrency === displayCurrency) {
+    return displayCurrency === 'KRW'
+      ? `₩${formatNumber(price, 0)}`
+      : `$${formatNumber(price, 2)}`;
+  }
+
+  if (!krwRate || krwRate <= 0) {
+    return '환율 로딩중';
+  }
+
+  if (displayCurrency === 'KRW') {
+    return `₩${formatNumber(price * krwRate, 0)}`;
+  }
+
+  return `$${formatNumber(price / krwRate, 2)}`;
+}
+
+function CurrencyToggle({
+  displayCurrency,
+  onChange,
+}: {
+  displayCurrency: DisplayCurrency;
+  onChange: (currency: DisplayCurrency) => void;
+}) {
+  return (
+    <div className="fixed right-4 top-4 z-30">
+      <div className="inline-flex overflow-hidden rounded-md border border-emerald-300 bg-emerald-50/90 shadow-sm backdrop-blur-sm">
+      <button
+        type="button"
+        className={`px-6 py-1.5 text-sm font-semibold transition-colors ${displayCurrency === 'KRW' ? 'bg-emerald-500 text-white' : 'bg-transparent text-slate-400'}`}
+        onClick={() => onChange('KRW')}
+      >
+        KRW
+      </button>
+      <button
+        type="button"
+        className={`px-6 py-1.5 text-sm font-semibold transition-colors ${displayCurrency === 'USD' ? 'bg-emerald-500 text-white' : 'bg-transparent text-slate-400'}`}
+        onClick={() => onChange('USD')}
+      >
+        USD
+      </button>
+      </div>
+    </div>
+  );
 }
 
 function formatDelta(delta?: number) {
@@ -187,39 +243,123 @@ function Sparkline({
   );
 }
 
-function CandlestickChart({ points }: { points: ChartPoint[] }) {
+function CandlestickChart({
+  points,
+  sourceCurrency,
+  displayCurrency,
+  krwRate,
+}: {
+  points: ChartPoint[];
+  sourceCurrency: DisplayCurrency;
+  displayCurrency: DisplayCurrency;
+  krwRate?: number;
+}) {
   const width = 1200;
   const height = 360;
-  const padding = 20;
+  const paddingTop = 20;
+  const paddingBottom = 20;
+  const paddingLeft = 16;
+  const axisWidth = 90;
+  const paddingRight = 12;
   if (!points.length) {
     return (
       <div className="text-sm text-slate-400">차트 데이터를 불러올 수 없습니다.</div>
     );
   }
 
-  const valid = points.filter((p) => p.high !== undefined && p.low !== undefined);
+  const canConvert = sourceCurrency === displayCurrency || (!!krwRate && krwRate > 0);
+  const axisCurrency: DisplayCurrency = canConvert ? displayCurrency : sourceCurrency;
+
+  const convertValue = (value: number) => {
+    if (sourceCurrency === axisCurrency) {
+      return value;
+    }
+    if (!krwRate || krwRate <= 0) {
+      return value;
+    }
+    return axisCurrency === 'KRW' ? value * krwRate : value / krwRate;
+  };
+
+  const converted = points.map((point) => ({
+    ...point,
+    open: point.open !== undefined ? convertValue(point.open) : undefined,
+    high: point.high !== undefined ? convertValue(point.high) : undefined,
+    low: point.low !== undefined ? convertValue(point.low) : undefined,
+    close: convertValue(point.close),
+  }));
+
+  const valid = converted.filter((p) => p.high !== undefined && p.low !== undefined);
   const highs = valid.map((p) => p.high as number);
   const lows = valid.map((p) => p.low as number);
   const min = Math.min(...lows);
   const max = Math.max(...highs);
   const range = max - min || 1;
-  const candleWidth = width / valid.length;
+  const plotWidth = width - paddingLeft - axisWidth - paddingRight;
+  const candleWidth = plotWidth / valid.length;
   const bodyWidth = Math.max(2, candleWidth * 0.6);
 
   const scaleY = (value: number) =>
-    padding + ((max - value) / range) * (height - padding * 2);
+    paddingTop + ((max - value) / range) * (height - paddingTop - paddingBottom);
+
+  const buildNiceTicks = (minValue: number, maxValue: number) => {
+    const intervals = 5;
+    const rawStep = (maxValue - minValue) / intervals || 1;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(Math.abs(rawStep) || 1)));
+    const residual = rawStep / magnitude;
+    let niceResidual = 1;
+    if (residual > 1) niceResidual = 2;
+    if (residual > 2) niceResidual = 5;
+    if (residual > 5) niceResidual = 10;
+    const step = niceResidual * magnitude;
+
+    const niceMax = Math.ceil(maxValue / step) * step;
+    const niceMin = Math.floor(minValue / step) * step;
+
+    const ticks: number[] = [];
+    for (let value = niceMax; value >= niceMin - step * 0.5; value -= step) {
+      ticks.push(Number(value.toFixed(8)));
+    }
+    return ticks;
+  };
+
+  const formatAxisValue = (value: number) => {
+    const abs = Math.abs(value);
+    const digits = axisCurrency === 'USD'
+      ? abs >= 100 ? 0 : abs >= 10 ? 1 : 2
+      : abs >= 100 ? 0 : 1;
+    return formatNumber(value, digits);
+  };
+
+  const tickValues = buildNiceTicks(min, max);
+  const ticks = tickValues.map((value) => {
+    const y = scaleY(value);
+    return { y, value };
+  });
+
+  const axisX = width - axisWidth;
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-72">
       <rect width={width} height={height} fill="rgba(0,0,0,0)" />
+      {ticks.map((tick) => (
+        <line
+          key={`grid-${tick.y.toFixed(2)}`}
+          x1={paddingLeft}
+          x2={axisX}
+          y1={tick.y}
+          y2={tick.y}
+          stroke="rgba(15,23,42,0.18)"
+          strokeWidth="1"
+        />
+      ))}
       {valid.map((point, index) => {
         const open = point.open ?? point.close;
         const close = point.close;
         const high = point.high ?? close;
         const low = point.low ?? close;
         const isUp = close >= open;
-        const color = isUp ? '#00e58f' : '#ff5c6f';
-        const x = index * candleWidth + candleWidth / 2;
+        const color = isUp ? '#ff5c6f' : '#3b82f6';
+        const x = paddingLeft + index * candleWidth + candleWidth / 2;
         const yOpen = scaleY(open);
         const yClose = scaleY(close);
         const yHigh = scaleY(high);
@@ -240,6 +380,34 @@ function CandlestickChart({ points }: { points: ChartPoint[] }) {
           </g>
         );
       })}
+      <line
+        x1={axisX}
+        x2={axisX}
+        y1={paddingTop}
+        y2={height - paddingBottom}
+        stroke="rgba(15,23,42,0.35)"
+        strokeWidth="1.2"
+      />
+      {ticks.map((tick) => (
+        <g key={`axis-${tick.y.toFixed(2)}`}>
+          <line
+            x1={axisX}
+            x2={axisX + 6}
+            y1={tick.y}
+            y2={tick.y}
+            stroke="rgba(15,23,42,0.35)"
+            strokeWidth="1"
+          />
+          <text
+            x={axisX + 10}
+            y={tick.y + 4}
+            fontSize="13"
+            fill="rgba(15,23,42,0.75)"
+          >
+            {`${formatAxisValue(tick.value)} ${axisCurrency}`}
+          </text>
+        </g>
+      ))}
     </svg>
   );
 }
@@ -247,11 +415,13 @@ function CandlestickChart({ points }: { points: ChartPoint[] }) {
 function WatchlistCard({
   ticker,
   krwRate,
+  displayCurrency,
   onDelete,
   onDetail,
 }: {
   ticker: string;
   krwRate?: number;
+  displayCurrency: DisplayCurrency;
   onDelete: (ticker: string) => void;
   onDetail: (ticker: string) => void;
 }) {
@@ -310,55 +480,52 @@ function WatchlistCard({
   const change = quote?.regularMarketChangePercent ?? 0;
   const delta = formatDelta(change);
   const market = getMarketLabel(ticker, quote || undefined);
-  const priceColor = change < 0 ? '#ff5c6f' : '#00e58f';
+  const priceColor = change < 0 ? '#3b82f6' : '#ff5c6f';
   const gradientId = `spark-${ticker.replace(/[^a-zA-Z0-9]/g, '')}`;
 
   return (
-    <div className="finz-card p-6 flex flex-col gap-4 finz-fade-in">
+    <div
+      className="finz-card p-6 flex flex-col gap-4 finz-fade-in cursor-pointer"
+      role="button"
+      tabIndex={0}
+      onClick={() => onDetail(ticker)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onDetail(ticker);
+        }
+      }}
+    >
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="text-lg font-semibold text-slate-900">
+        <div className="min-w-0 flex-1 pr-2">
+          <div className="text-base md:text-lg font-semibold text-slate-900 break-all leading-[1.45] py-1">
             {quote?.shortName || quote?.longName || '기업명 없음'}
           </div>
           <div className="text-sm text-slate-500">
             {ticker} - {market}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center shrink-0">
           <button
             type="button"
             className="finz-button"
-            onClick={() => onDetail(ticker)}
-            aria-label="상세 보기"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <line x1="20" y1="20" x2="16.6" y2="16.6" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className="finz-button"
-            onClick={() => onDelete(ticker)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(ticker);
+            }}
           >
             X
           </button>
         </div>
       </div>
       <div>
-        <div className="text-3xl font-semibold" style={{ color: priceColor }}>
-          {market === 'Korea'
-            ? `₩${formatNumber(currentPrice, 0)}`
-            : formatUsdKrw(currentPrice, krwRate)}
+        <div className="text-xl md:text-2xl lg:text-3xl leading-[1.45] py-1 font-semibold break-words" style={{ color: priceColor }}>
+          {formatPriceByCurrency({
+            price: currentPrice,
+            sourceCurrency: market === 'Korea' ? 'KRW' : 'USD',
+            displayCurrency,
+            krwRate,
+          })}
         </div>
         {delta ? <span className={delta.className}>{delta.text}</span> : null}
       </div>
@@ -393,6 +560,10 @@ function HomeContent() {
   const [krwPrev, setKrwPrev] = useLocalStorageState<number | null>(
     STORAGE_KEYS.krwPrev,
     null,
+  );
+  const [displayCurrency, setDisplayCurrency] = useLocalStorageState<DisplayCurrency>(
+    STORAGE_KEYS.displayCurrency,
+    'KRW',
   );
   const [btc, setBtc] = useState<{ price: number; change: number } | null>(
     null,
@@ -522,10 +693,6 @@ function HomeContent() {
     router.push(`/?ticker=${encodeURIComponent(ticker)}`);
   };
 
-  const handleBack = () => {
-    router.push('/');
-  };
-
   const { usaTickers, koreaTickers } = useMemo(() => {
     const usa: string[] = [];
     const korea: string[] = [];
@@ -542,17 +709,26 @@ function HomeContent() {
   if (activeTicker) {
     return (
       <main className="finz-shell">
+        <CurrencyToggle
+          displayCurrency={displayCurrency}
+          onChange={setDisplayCurrency}
+        />
         <div className="finz-container mx-auto max-w-6xl px-6 py-12">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="finz-title text-4xl">Finz Detail</div>
-              <div className="text-sm text-slate-400">{activeTicker}</div>
-            </div>
-            <button type="button" className="finz-button" onClick={handleBack}>
-              메인으로
+          <div className="mb-8">
+            <button
+              type="button"
+              className="finz-title text-4xl cursor-pointer"
+              onClick={() => router.push('/')}
+              aria-label="메인으로 이동"
+            >
+              FINZ
             </button>
           </div>
-          <DetailSection ticker={activeTicker} krwRate={krwRate ?? undefined} />
+          <DetailSection
+            ticker={activeTicker}
+            krwRate={krwRate ?? undefined}
+            displayCurrency={displayCurrency}
+          />
         </div>
       </main>
     );
@@ -564,12 +740,13 @@ function HomeContent() {
 
   return (
     <main className="finz-shell">
+      <CurrencyToggle
+        displayCurrency={displayCurrency}
+        onChange={setDisplayCurrency}
+      />
       <div className="finz-container mx-auto max-w-6xl px-6 py-16">
         <div className="text-center mb-12 finz-fade-in">
           <h1 className="finz-title text-6xl">Finz</h1>
-          <p className="text-slate-600 mt-3">
-            개인 주식 대시보드: 관심 종목과 시장 흐름을 한 화면에서 확인하세요.
-          </p>
         </div>
 
         <section className="finz-card p-6 mb-10 finz-fade-in">
@@ -589,7 +766,22 @@ function HomeContent() {
               {suggestions.map((item) => (
                 <div
                   key={item.symbol}
-                  className="finz-card p-4 flex items-center justify-between"
+                  className="finz-card p-4 flex items-center justify-between cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSuggestions([]);
+                    handleDetail(item.symbol);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSearchQuery('');
+                      setSuggestions([]);
+                      handleDetail(item.symbol);
+                    }
+                  }}
                 >
                   <div>
                     <div className="text-base font-semibold text-slate-900">
@@ -602,7 +794,10 @@ function HomeContent() {
                   <button
                     type="button"
                     className="finz-button"
-                    onClick={() => handleAddTicker(item.symbol)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleAddTicker(item.symbol);
+                    }}
                   >
                     +
                   </button>
@@ -621,7 +816,7 @@ function HomeContent() {
             <div className="text-sm uppercase tracking-[0.2em] text-slate-500">
               USD / KRW
             </div>
-            <div className="text-3xl font-semibold text-slate-900 mt-4">
+            <div className="text-lg md:text-xl lg:text-2xl leading-[1.45] py-1 font-semibold text-slate-900 mt-4 break-words">
               {krwRate ? `₩${formatNumber(krwRate, 0)}` : '데이터 불러오는 중'}
             </div>
             {krwDeltaText ? (
@@ -635,8 +830,15 @@ function HomeContent() {
             <div className="text-sm uppercase tracking-[0.2em] text-slate-500">
               Bitcoin
             </div>
-            <div className="text-3xl font-semibold text-slate-900 mt-4">
-              {btc ? `$${formatNumber(btc.price, 0)}` : '데이터 불러오는 중'}
+            <div className="text-lg md:text-xl lg:text-2xl leading-[1.45] py-1 font-semibold text-slate-900 mt-4 break-words">
+              {btc
+                ? formatPriceByCurrency({
+                  price: btc.price,
+                  sourceCurrency: 'USD',
+                  displayCurrency,
+                  krwRate: krwRate ?? undefined,
+                })
+                : '데이터 불러오는 중'}
             </div>
             {btcDeltaText ? (
               <div className="mt-3">
@@ -650,12 +852,13 @@ function HomeContent() {
         <section className="space-y-10">
           <div>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">관심 종목 - 한국주식</h2>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {koreaTickers.map((ticker) => (
                 <WatchlistCard
                   key={ticker}
                   ticker={ticker}
                   krwRate={krwRate ?? undefined}
+                  displayCurrency={displayCurrency}
                   onDelete={handleDeleteTicker}
                   onDetail={handleDetail}
                 />
@@ -664,12 +867,13 @@ function HomeContent() {
           </div>
           <div>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">관심 종목 - 미국주식</h2>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {usaTickers.map((ticker) => (
                 <WatchlistCard
                   key={ticker}
                   ticker={ticker}
                   krwRate={krwRate ?? undefined}
+                  displayCurrency={displayCurrency}
                   onDelete={handleDeleteTicker}
                   onDetail={handleDetail}
                 />
@@ -700,7 +904,15 @@ export default function Home() {
   );
 }
 
-function DetailSection({ ticker, krwRate }: { ticker: string; krwRate?: number }) {
+function DetailSection({
+  ticker,
+  krwRate,
+  displayCurrency,
+}: {
+  ticker: string;
+  krwRate?: number;
+  displayCurrency: DisplayCurrency;
+}) {
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [chart, setChart] = useState<ChartPoint[]>([]);
 
@@ -756,36 +968,95 @@ function DetailSection({ ticker, krwRate }: { ticker: string; krwRate?: number }
   const delta = formatDelta(change);
   const market = getMarketLabel(ticker, quote || undefined);
   const currentPrice = quote?.currentPrice ?? 0;
+  const companyName = quote?.longName || quote?.shortName || ticker;
+  const summaryText = `${companyName}의 기업 프로필 정보를 준비 중입니다.`;
+  const detailPriceColor = change < 0 ? '#3b82f6' : '#ff5c6f';
+
+  const changeAmount =
+    Number.isFinite(currentPrice) && Number.isFinite(change) && change > -100
+      ? currentPrice - currentPrice / (1 + change / 100)
+      : null;
+
+  const changeAmountText = (() => {
+    if (changeAmount === null) {
+      return null;
+    }
+
+    const sourceCurrency: DisplayCurrency = market === 'Korea' ? 'KRW' : 'USD';
+    let converted = changeAmount;
+
+    if (sourceCurrency !== displayCurrency) {
+      if (!krwRate || krwRate <= 0) {
+        return null;
+      }
+      converted = displayCurrency === 'KRW' ? changeAmount * krwRate : changeAmount / krwRate;
+    }
+
+    const sign = converted >= 0 ? '+' : '-';
+    const absValue = Math.abs(converted);
+    const unit = displayCurrency === 'KRW' ? `₩${formatNumber(absValue, 0)}` : `$${formatNumber(absValue, 2)}`;
+    return `${sign}${unit}`;
+  })();
 
   return (
-    <div className="finz-card p-8">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
-        <div>
-          <div className="text-3xl font-semibold text-slate-900">
-            {quote?.longName || quote?.shortName || ticker}
+    <div className="space-y-8">
+      <div className="min-w-0 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="text-xl md:text-2xl lg:text-3xl leading-[1.45] py-1 font-semibold text-slate-900 break-words">
+            {companyName}
           </div>
-          <div className="text-sm text-slate-500 mt-1">
-            {ticker} - {market} - {quote?.industry || '산업 정보 없음'}
+          <div className="text-sm text-slate-500 mt-1 break-words leading-[1.45] py-0.5">
+            {ticker} - {market}
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-4xl font-semibold text-slate-900">
-            {market === 'Korea'
-              ? `₩${formatNumber(currentPrice, 0)}`
-              : formatUsdKrw(currentPrice, krwRate)}
+        <div className="md:shrink-0">
+          <div className="mt-1 flex items-center gap-2 md:justify-end">
+            <div className="text-xl md:text-2xl lg:text-3xl leading-[1.45] py-1 font-semibold break-words" style={{ color: detailPriceColor }}>
+              {formatPriceByCurrency({
+                price: currentPrice,
+                sourceCurrency: market === 'Korea' ? 'KRW' : 'USD',
+                displayCurrency,
+                krwRate,
+              })}
+            </div>
+            {changeAmountText ? (
+              <span className="text-sm leading-[1.4] font-semibold" style={{ color: detailPriceColor }}>
+                {changeAmountText}
+              </span>
+            ) : null}
+            {delta ? <span className={delta.className}>{delta.text}</span> : null}
           </div>
-          {delta ? <span className={delta.className}>{delta.text}</span> : null}
         </div>
       </div>
 
       <div>
-        <div className="text-sm uppercase tracking-[0.2em] text-slate-500 mb-4">
-          1Y Candlestick
-        </div>
-        <CandlestickChart points={chart} />
+        <div className="text-lg font-semibold text-slate-900 mb-3">기업 프로필</div>
+        <section className="finz-card p-8">
+          <div className="text-slate-700 leading-relaxed">
+            {summaryText}
+          </div>
+        </section>
       </div>
-      <div className="mt-6 text-sm text-slate-400">
-        다음 단계: 이 영역에 뉴스 요약 및 인사이트 위젯을 추가할 수 있습니다.
+
+      <div>
+        <div className="text-lg font-semibold text-slate-900 mb-3">차트</div>
+        <section className="finz-card p-8">
+          <CandlestickChart
+            points={chart}
+            sourceCurrency={market === 'Korea' ? 'KRW' : 'USD'}
+            displayCurrency={displayCurrency}
+            krwRate={krwRate}
+          />
+        </section>
+      </div>
+
+      <div>
+        <div className="text-lg font-semibold text-slate-900 mb-3">Hot News Zone</div>
+        <section className="finz-card p-8">
+          <div className="text-slate-500 text-sm">
+            뉴스 데이터 연결 전입니다. 다음 단계에서 뉴스 소스/API를 연결하면 이 영역에 최신 이슈를 표시할 수 있습니다.
+          </div>
+        </section>
       </div>
     </div>
   );

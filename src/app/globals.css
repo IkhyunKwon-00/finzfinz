@@ -61,8 +61,12 @@ body {
 }
 
 .finz-title {
+  display: inline-block;
   font-family: var(--font-finz-display), sans-serif;
   font-weight: 700;
+  line-height: 1.22;
+  padding-top: 0.1em;
+  padding-bottom: 0.08em;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #0f172a;
@@ -96,13 +100,13 @@ body {
 }
 
 .finz-pill.up {
-  color: #00e58f;
-  background: rgba(34, 197, 94, 0.12);
+  color: #ff5c6f;
+  background: rgba(239, 68, 68, 0.12);
 }
 
 .finz-pill.down {
-  color: #ff5c6f;
-  background: rgba(239, 68, 68, 0.12);
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.12);
 }
 
 .finz-input {
